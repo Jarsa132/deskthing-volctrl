@@ -4,20 +4,34 @@ const archiver = require('archiver');
 
 const buildsDir = path.join(__dirname, 'dist');
 
-if (!fs.existsSync(buildsDir)) fs.mkdirSync(buildsDir);
+console.log('\nCreating build...');
 
-if (!fs.existsSync(path.join(buildsDir, 'node_modules'))) fs.mkdirSync(path.join(buildsDir, 'node_modules'));
+if (!fs.existsSync(buildsDir)) {
+    console.log('Creating build directory...');
+    fs.mkdirSync(buildsDir);
+}
+
+if (!fs.existsSync(path.join(buildsDir, 'node_modules'))) {
+    console.log('Creating node_modules directory...');
+    fs.mkdirSync(path.join(buildsDir, 'node_modules'));
+}
 
 if (!fs.existsSync(path.join(buildsDir, 'node_modules/node-audio-volume-mixer'))) {
-    fs.cpSync(
-        path.join(__dirname, 'node_modules/node-audio-volume-mixer'),
-        path.join(buildsDir, 'node_modules/node-audio-volume-mixer'),
-        {recursive: true}
-    );
+    console.log('Copying node-audio-volume-mixer module...');
+    fs.mkdirSync(path.join(buildsDir, 'node_modules/node-audio-volume-mixer'), { recursive: true });
+    fs.readdirSync(path.join(__dirname, 'node_modules/node-audio-volume-mixer')).forEach(file => {
+        const srcPath = path.join(__dirname, 'node_modules/node-audio-volume-mixer', file);
+        const destPath = path.join(buildsDir, 'node_modules/node-audio-volume-mixer', file);
+        if (fs.lstatSync(srcPath).isDirectory()) {
+            fs.cpSync(srcPath, destPath, { recursive: true });
+        } else {
+            fs.copyFileSync(srcPath, destPath);
+        }
+    });
 }
 
 // archive the build, delete content of build folder and move the archive to the build folder
-const archive = archiver('zip', {zlib: {level: 9}});
+const archive = archiver('zip', { zlib: { level: 9 } });
 const output = fs.createWriteStream(path.join(__dirname, 'volctrl.zip'));
 
 output.on('close', () => {
