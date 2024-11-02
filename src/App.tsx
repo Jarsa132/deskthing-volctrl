@@ -12,6 +12,93 @@ const App: React.FC = () => {
     const [processes, setProcesses] = React.useState<SessionData[]>([])
     const [icons, setIcons] = React.useState<{ [key: number]: string }>({})
 
+    const [isMixerSelected , setIsMixerSelected] = React.useState(false)
+    const [selectedProcess, setSelectedProcess] = React.useState<number | null>(null)
+    const [isEnterHeld, setIsEnterHeld] = React.useState(false)
+
+
+    useEffect(() => {
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.stopImmediatePropagation()
+                e.preventDefault()
+                setIsMixerSelected(!isMixerSelected)
+                if (isMixerSelected) {
+                    setSelectedProcess(null)
+                }
+            }
+
+            if (e.key === 'Enter' && isMixerSelected) {
+                e.stopImmediatePropagation()
+                e.preventDefault()
+                setIsEnterHeld(true)
+            }
+        }
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.stopImmediatePropagation()
+                e.preventDefault()
+            }
+
+            if (e.key === 'Enter' && isMixerSelected) {
+                e.stopImmediatePropagation()
+                e.preventDefault()
+                setIsEnterHeld(false)
+            }
+        }
+
+        const scroll = (e: WheelEvent) => {
+            if (!isMixerSelected) return
+            e.stopImmediatePropagation()
+            e.preventDefault()
+
+            if(!isEnterHeld) {
+                let isForward = e.deltaY < 0
+                let processCount = processes.length
+                if (isForward) {
+                    if (selectedProcess === null) {
+                        setSelectedProcess(0)
+                    } else {
+                        setSelectedProcess((selectedProcess + 1) % processCount)
+                    }
+                } else {
+                    if (selectedProcess === null) {
+                        setSelectedProcess(processCount - 1)
+                    } else {
+                        setSelectedProcess((selectedProcess - 1 + processCount) % processCount)
+                    }
+                }
+            } else {
+                if (selectedProcess === null) return
+
+                let isForward = e.deltaY < 0
+                let selectedProcessIndex = selectedProcess
+                let selectedProcessVolume = processes[selectedProcessIndex].volume
+                let newVolume = selectedProcessVolume
+
+                if (isForward) {
+                    newVolume = Math.min(selectedProcessVolume + 0.01, 1)
+                } else {
+                    newVolume = Math.max(selectedProcessVolume - 0.01, 0)
+                }
+
+                setVolume(processes[selectedProcessIndex].pid, newVolume)
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('keyup', handleKeyUp)
+        window.addEventListener('wheel', scroll)
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('keyup', handleKeyUp)
+            window.removeEventListener('wheel', scroll)
+        }
+    }, [isMixerSelected, setIsMixerSelected, selectedProcess, processes, isEnterHeld])
+
     useEffect(() => {
         if (import.meta.env.MODE === 'development') {
             setProcesses([
@@ -90,12 +177,14 @@ const App: React.FC = () => {
 
     return (
         <div className="bg-black w-screen h-screen flex flex-col gap-2 overflow-y-auto p-4">
-            {processes.map((process) => {
+            {processes.map((process, index) => {
                 return (
-                    <div key={process.pid} className="bg-white bg-opacity-10 w-full h-12 flex justify-items-center items-center shrink-0 m-auto gap-4 p-2 rounded-md">
+                    <div
+                    key={process.pid}
+                    className={`bg-white bg-opacity-10 w-full h-12 flex justify-items-center items-center shrink-0 m-auto gap-4 p-2 rounded-md ${selectedProcess == index && 'outline outline-green-500'}`}>
                         <div className='w-[5%] h-full flex shrink-0 justify-items-center items-center'>
                             <div className='m-auto'>
-                                <Image src={`data:image/png;base64,${icons[process.pid]}`} />
+                                <Image src={`data:image/png;base64,${icons[process.pid] || ''}`} />
                             </div>
                         </div>
                         <h1 className="text-white w-1/3 shrink-0 text-center truncate">{process.name}</h1>
