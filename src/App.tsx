@@ -42,7 +42,7 @@ const App: React.FC = () => {
         return () => {
             removeListener()
         }
-    })
+    }, [])
 
     function setVolume(pid: number, volume: number) {
         const newProcesses = processes.map((process) => {
