@@ -42,7 +42,6 @@ const start = async () => {
       data = data.filter(session => session.pid > 1)
 
       // Compare data to avoid spaming the same data
-      console.log(lastAudioData, lastAudioData.length, data, arraysEqual(lastAudioData, data), lastAudioData.length > 0 && arraysEqual(lastAudioData, data))
       if (lastAudioData.length > 0 && arraysEqual(lastAudioData, data)) return
 
       DeskThing.sendDataToClient({type: 'audio', payload: data })
