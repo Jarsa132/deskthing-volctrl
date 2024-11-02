@@ -16,10 +16,6 @@ jobs:
       with:
         node-version: '22'
 
-    - name: Install build tools
-      run: |
-        npm install --global windows-build-tools
-
     - name: Build
       run: |
         npm install
