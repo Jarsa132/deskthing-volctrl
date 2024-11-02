@@ -3,7 +3,7 @@
   "private": true,
   "repository": "github:jarsa132/deskthing-volctrl",
   "homepage": "https://github.com/jarsa132/deskthing-volctrl#readme",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
