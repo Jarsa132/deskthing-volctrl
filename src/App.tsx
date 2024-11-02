@@ -10,29 +10,56 @@ const App: React.FC = () => {
     const deskthing = DeskThing.getInstance()
 
     const [processes, setProcesses] = React.useState<SessionData[]>([])
+    const [icons, setIcons] = React.useState<{ [key: number]: string }>({})
 
     useEffect(() => {
         if (import.meta.env.MODE === 'development') {
             setProcesses([
-                { name: 'Spotify', pid: 1, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Discord', pid: 2, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Chrome', pid: 3, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Firefox', pid: 4, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Edge', pid: 5, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Brave', pid: 6, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Opera', pid: 7, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Vivaldi', pid: 8, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Safari', pid: 9, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Tor', pid: 10, isMuted: false, volume: 0.5, icon: '' },
-                { name: 'Internet Explorer', pid: 11, isMuted: false, volume: 0.5, icon: '' },
+                { name: 'Spotify', pid: 1, volume: 0.5, },
+                { name: 'Discord', pid: 2, volume: 0.5, },
+                { name: 'Chrome', pid: 3, volume: 0.5, },
+                { name: 'Firefox', pid: 4, volume: 0.5, },
+                { name: 'Edge', pid: 5, volume: 0.5, },
+                { name: 'Brave', pid: 6, volume: 0.5, },
+                { name: 'Opera', pid: 7, volume: 0.5, },
+                { name: 'Vivaldi', pid: 8, volume: 0.5, },
+                { name: 'Safari', pid: 9, volume: 0.5, },
+                { name: 'Tor', pid: 10, volume: 0.5, },
+                { name: 'Internet Explorer', pid: 11, volume: 0.5 },
             ])
         }
     }, [])
 
     useEffect(() => {
+        let neededIcons: number[] = []
+
+        // Look for icons that aren't loaded
+        processes.forEach((process) => {
+            if (!icons[process.pid]) {
+                neededIcons.push(process.pid)
+            }
+        })
+
+        if (neededIcons.length > 0) {
+            deskthing.sendMessageToParent({ type: 'get', request: 'icons', payload: neededIcons })
+        }
+
+        // Remove unused icons to save memory
+        for (const pid in icons) {
+            if (!processes.some((process) => process.pid === parseInt(pid))) {
+                delete icons[parseInt(pid)]
+            }
+        }
+    }, [processes])
+
+    useEffect(() => {
         const onAppData = async (data: SocketData) => {
             if (data.type === 'audio') {
                 setProcesses(data.payload)
+            }
+
+            if (data.type === 'icons') {
+                setIcons((prevIcons) => { return { ...prevIcons, ...data.payload } })
             }
         }
 
@@ -68,7 +95,7 @@ const App: React.FC = () => {
                     <div key={process.pid} className="bg-white bg-opacity-10 w-full h-12 flex justify-items-center items-center shrink-0 m-auto gap-4 p-2 rounded-md">
                         <div className='w-[5%] h-full flex shrink-0 justify-items-center items-center'>
                             <div className='m-auto'>
-                                <Image src={`data:image/png;base64,${process.icon}`} />
+                                <Image src={`data:image/png;base64,${icons[process.pid]}`} />
                             </div>
                         </div>
                         <h1 className="text-white w-1/3 shrink-0 text-center truncate">{process.name}</h1>

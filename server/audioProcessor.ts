@@ -1,9 +1,8 @@
 import { NodeAudioVolumeMixer } from "node-audio-volume-mixer";
-import find from 'find-process';
 import getFileIcon from 'extract-file-icon';
 import { SessionData } from '../shared/types';
 
-let iconCache: { [key: string]: string } = {};
+import { findExecutables } from "./utils";
 
 const getAudioData = async (): Promise<SessionData[]> => {
     const sessions = NodeAudioVolumeMixer.getAudioSessionProcesses();
@@ -12,40 +11,48 @@ const getAudioData = async (): Promise<SessionData[]> => {
         // Skip system sounds
         if (session.pid <= 0) return null;
         
-        let sessionData: SessionData = {
+        return {
             name: session.name.replace('.exe', ''),
             pid: session.pid,
             volume: NodeAudioVolumeMixer.getAudioSessionVolumeLevelScalar(session.pid),
-            icon: undefined
-        };
-
-        if (iconCache[session.pid]) {
-            sessionData.icon = iconCache[session.pid];
-        } else {
-            let process = await find('pid', session.pid).catch(() => null);
-            //@ts-ignore
-            if (process && process[0] && process[0].bin) {
-                //@ts-ignore
-                let icon = getFileIcon(process[0].bin, 32);
-                sessionData.icon = icon.toString('base64');
-                iconCache[session.pid] = sessionData.icon;
-            }
         }
-        
-        return sessionData;
     });
 
     return (await Promise.all(promises)).filter(sessionData => sessionData !== null) as SessionData[];
 };
 
+const getIcon = async (bin: string): Promise<string> => {
+    const icon = getFileIcon(bin, 32);
+    if(!icon) return '';
+    return icon.toString('base64');
+};
 
-process.on('message', async (message: string | { type: string, payload: any }) => {
-    if (message === 'getAudioData') {
+const getIcons = async (pids: GetIconsPayload): Promise<{ [key: number]: string }> => {
+    const executables = await findExecutables(pids);
+    const icons = await Promise.all(executables.map(({ bin }) => getIcon(bin)));
+    return executables.reduce((acc, { pid }, index) => {
+        acc[pid] = icons[index];
+        return acc;
+    }, {});
+}
+
+type SetVolumePayload = { pid: number, volume: number };
+type GetIconsPayload = number[];
+
+process.on('message', async (message: { type: string, payload: SetVolumePayload | GetIconsPayload | any }) => {
+    if(!process.send) return;
+
+    if (message.type === 'getAudioData') {
         const data = await getAudioData();
-        if (process.send) {
-            process.send({ type: 'audioData', payload: data });
-        }
-    } else if (typeof message === 'object' && 'type' in message && message.type === 'setVolume') {
+        process.send({ type: 'audioData', payload: data });
+    }
+
+    if (message.type === 'setVolume') {
         NodeAudioVolumeMixer.setAudioSessionVolumeLevelScalar(message.payload.pid, message.payload.volume);
+    }
+
+    if(message.type === 'getIcons') {
+        const icons = await getIcons(message.payload);
+        process.send({ type: 'icons', payload: icons });
     }
 });

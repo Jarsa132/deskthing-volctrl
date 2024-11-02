@@ -28,11 +28,16 @@ const start = async () => {
         if (request.request === 'audio') {
             DeskThing.sendDataToClient({ type: 'audio', payload: lastAudioData });
         }
+
+        if (request.request === 'icons') {
+            if (!audioProcess) return;
+            audioProcess.send({ type: 'getIcons', payload: request.payload });
+        }
     });
 
     refreshInterval = setInterval(() => {
         if (!audioProcess) return;
-        audioProcess.send('getAudioData');
+        audioProcess.send({ type: 'getAudioData' });
     }, 1000);
 
     while (!audioProcess) {
@@ -48,6 +53,10 @@ const start = async () => {
 
             lastAudioData = data;
             DeskThing.sendDataToClient({ type: 'audio', payload: data });
+        }
+
+        if (message.type === 'icons') {
+            DeskThing.sendDataToClient({ type: 'icons', payload: message.payload });
         }
     });
 };

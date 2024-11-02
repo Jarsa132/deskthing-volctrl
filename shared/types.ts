@@ -1,1 +1,1 @@
-export type SessionData = { name: string, pid: number, volume: number, icon?: string };
+export type SessionData = { name: string, pid: number, volume: number };
