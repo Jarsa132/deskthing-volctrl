@@ -3,6 +3,8 @@ import find from 'find-process';
 import getFileIcon from 'extract-file-icon';
 import { SessionData } from '../shared/types';
 
+let iconCache: { [key: string]: string } = {};
+
 const getAudioData = async (): Promise<SessionData[]> => {
     const sessions = NodeAudioVolumeMixer.getAudioSessionProcesses();
     
@@ -13,17 +15,21 @@ const getAudioData = async (): Promise<SessionData[]> => {
         let sessionData: SessionData = {
             name: session.name.replace('.exe', ''),
             pid: session.pid,
-            isMuted: NodeAudioVolumeMixer.isAudioSessionMuted(session.pid),
             volume: NodeAudioVolumeMixer.getAudioSessionVolumeLevelScalar(session.pid),
             icon: undefined
         };
-        
-        let process = await find('pid', session.pid).catch(() => null);
-        //@ts-ignore
-        if (process && process[0] && process[0].bin) {
+
+        if (iconCache[session.pid]) {
+            sessionData.icon = iconCache[session.pid];
+        } else {
+            let process = await find('pid', session.pid).catch(() => null);
             //@ts-ignore
-            let icon = getFileIcon(process[0].bin, 32);
-            sessionData.icon = icon.toString('base64');
+            if (process && process[0] && process[0].bin) {
+                //@ts-ignore
+                let icon = getFileIcon(process[0].bin, 32);
+                sessionData.icon = icon.toString('base64');
+                iconCache[session.pid] = sessionData.icon;
+            }
         }
         
         return sessionData;
