@@ -1,0 +1,1 @@
+export type SessionData = { name: string, pid: number, isMuted: boolean, volume: number, icon?: string };

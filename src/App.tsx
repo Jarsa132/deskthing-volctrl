@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { DeskThing } from 'deskthing-client'
 import { SocketData } from 'deskthing-client/dist/types'
+import { SessionData } from '../shared/types'
 
 import {Slider} from "@nextui-org/slider";
 import { Image } from '@nextui-org/image';
@@ -8,7 +9,7 @@ import { Image } from '@nextui-org/image';
 const App: React.FC = () => {
     const deskthing = DeskThing.getInstance()
 
-    const [processes, setProcesses] = React.useState<{ name: string, pid: number, isMuted: boolean, volume: number, icon?: string }[]>([])
+    const [processes, setProcesses] = React.useState<SessionData[]>([])
 
     useEffect(() => {
         if (import.meta.env.MODE === 'development') {

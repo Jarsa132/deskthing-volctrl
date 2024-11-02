@@ -1,72 +1,75 @@
 import { DeskThing as DK } from 'deskthing-server';
-import { NodeAudioVolumeMixer}  from "node-audio-volume-mixer";
-import find from 'find-process';
-import getFileIcon from 'extract-file-icon';
+import { ChildProcess, fork } from 'child_process';
+import path from 'path';
+import { SessionData } from '../shared/types';
 
 const DeskThing = DK.getInstance();
 export { DeskThing }
 
 // Thanks https://stackoverflow.com/a/55256318
-const objectsEqual = (o1, o2) => Object.keys(o1).length === Object.keys(o2).length && Object.keys(o1).every(p => o1[p] === o2[p]);
-const arraysEqual = (a1, a2) => a1.length === a2.length && a1.every((o, idx) => objectsEqual(o, a2[idx]));
+const objectsEqual = (o1: { [x: string]: any; }, o2: { [x: string]: any; }) => Object.keys(o1).length === Object.keys(o2).length && Object.keys(o1).every(p => o1[p] === o2[p]);
+const arraysEqual = (a1: any[], a2: string | any[]) => a1.length === a2.length && a1.every((o, idx) => objectsEqual(o, a2[idx]));
 
-type SessionData = { name: string, pid: number, isMuted: boolean, volume: number, icon?: string };
+let audioProcess: ChildProcess | null = null;
+let lastAudioData: SessionData[] = [];
+let refreshInterval: NodeJS.Timeout | null = null;
 
 const start = async () => {
-    let lastAudioData: SessionData[] = []
+    audioProcess = fork(path.resolve(__dirname, 'audioProcessor.js'));
 
-    DeskThing.on('set', async (request) => {
+    DeskThing.on('set', (request) => {
         if (request.request === 'volume') {
-            NodeAudioVolumeMixer.setAudioSessionVolumeLevelScalar(request.payload.pid, request.payload.volume)
+            if (!audioProcess) return;
+            audioProcess.send({ type: 'setVolume', payload: { pid: request.payload.pid, volume: request.payload.volume } });
         }
-    })
+    });
 
-
-    DeskThing.on('get', async (request) => {
+    DeskThing.on('get', (request) => {
         if (request.request === 'audio') {
-          DeskThing.sendDataToClient({type: 'audio', payload: lastAudioData })
+            DeskThing.sendDataToClient({ type: 'audio', payload: lastAudioData });
         }
-    })
+    });
 
-    setInterval(async () => {
-      const sessions = NodeAudioVolumeMixer.getAudioSessionProcesses()
+    refreshInterval = setInterval(() => {
+        if (!audioProcess) return;
+        audioProcess.send('getAudioData');
+    }, 1000);
 
-      let promises = sessions.map(async (session) => {
+    while (!audioProcess) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
 
-        // Skip system sounds
-        if (session.pid <= 0) return null;
-      
-        let sessionData: SessionData = {
-          name: session.name.replace('.exe', ''),
-          pid: session.pid,
-          isMuted: NodeAudioVolumeMixer.isAudioSessionMuted(session.pid),
-          volume: NodeAudioVolumeMixer.getAudioSessionVolumeLevelScalar(session.pid),
-          icon: undefined
-        };
-      
-        let process = await find('pid', session.pid).catch(() => null);
-        //@ts-ignore
-        if (process && process[0] && process[0].bin) {
-          //@ts-ignore
-          let icon = getFileIcon(process[0].bin, 32);
+    audioProcess.on('message', (message: { type: string, payload: any }) => {
+        if (message.type === 'audioData') {
+            const data = message.payload;
 
-          sessionData.icon = icon.toString('base64');
+            // Compare data to avoid spamming the same data
+            if (lastAudioData.length > 0 && arraysEqual(lastAudioData, data)) return;
+
+            lastAudioData = data;
+            DeskThing.sendDataToClient({ type: 'audio', payload: data });
         }
-      
-        return sessionData;
-      });
-      
-      let data = (await Promise.all(promises)).filter(sessionData => sessionData !== null);
-      lastAudioData = data;
+    });
+};
 
-      // Compare data to avoid spaming the same data
-      if (lastAudioData.length > 0 && arraysEqual(lastAudioData, data)) return
+// Stop the child process when DeskThing stops to unload .node files so they can be deleted
+const stop = async () => {
+    DeskThing.sendLog('Stopping app');
 
-      DeskThing.sendDataToClient({type: 'audio', payload: data })
+    if (refreshInterval) {
+        DeskThing.sendLog('Clearing interval');
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
 
+    if (audioProcess) {
+        DeskThing.sendLog('Killing audio process');
+        audioProcess.kill();
+        audioProcess = null;
+    }
+}
 
-    }, 1000)
+DeskThing.on('stop', stop);
+DeskThing.on('purge', stop);
 
-} 
-
-DeskThing.on('start', start)
+DeskThing.on('start', start);

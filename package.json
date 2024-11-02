@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build-server",
-    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/ --external:node-audio-volume-mixer --external:extract-file-icon && node buildHelper.cjs",
+    "build-server": "esbuild server/*.ts --bundle --platform=node --outdir=dist/ --external:node-audio-volume-mixer --external:extract-file-icon && node buildHelper.cjs",
     "setup": "node setup.js",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
+    "@types/node": "^22.8.6",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-legacy": "^5.4.2",
