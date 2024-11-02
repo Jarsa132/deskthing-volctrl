@@ -16,18 +16,22 @@ if (!fs.existsSync(path.join(buildsDir, 'node_modules'))) {
     fs.mkdirSync(path.join(buildsDir, 'node_modules'));
 }
 
-if (!fs.existsSync(path.join(buildsDir, 'node_modules/node-audio-volume-mixer'))) {
-    console.log('Copying node-audio-volume-mixer module...');
-    fs.mkdirSync(path.join(buildsDir, 'node_modules/node-audio-volume-mixer'), { recursive: true });
-    fs.readdirSync(path.join(__dirname, 'node_modules/node-audio-volume-mixer')).forEach(file => {
-        const srcPath = path.join(__dirname, 'node_modules/node-audio-volume-mixer', file);
-        const destPath = path.join(buildsDir, 'node_modules/node-audio-volume-mixer', file);
-        if (fs.lstatSync(srcPath).isDirectory()) {
-            fs.cpSync(srcPath, destPath, { recursive: true });
-        } else {
-            fs.copyFileSync(srcPath, destPath);
-        }
-    });
+const modulesToCopy = ['extract-file-icon', 'node-audio-volume-mixer'];
+
+for (const module of modulesToCopy) {
+    if (!fs.existsSync(path.join(buildsDir, `node_modules/${module}`))) {
+        console.log(`Copying ${module} module...`);
+        fs.mkdirSync(path.join(buildsDir, `node_modules/${module}`), { recursive: true });
+        fs.readdirSync(path.join(__dirname, `node_modules/${module}`)).forEach(file => {
+            const srcPath = path.join(__dirname, `node_modules/${module}`, file);
+            const destPath = path.join(buildsDir, `node_modules/${module}`, file);
+            if (fs.lstatSync(srcPath).isDirectory()) {
+                fs.cpSync(srcPath, destPath, { recursive: true });
+            } else {
+                fs.copyFileSync(srcPath, destPath);
+            }
+        });
+    }
 }
 
 // archive the build, delete content of build folder and move the archive to the build folder

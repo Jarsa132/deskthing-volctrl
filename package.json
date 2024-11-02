@@ -9,12 +9,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build-server",
-    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/ --external:node-audio-volume-mixer && node buildHelper.cjs",
+    "build-server": "esbuild server/index.ts --bundle --platform=node --outdir=dist/ --external:node-audio-volume-mixer --external:extract-file-icon && node buildHelper.cjs",
     "setup": "node setup.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@nextui-org/image": "^2.0.32",
     "@nextui-org/react": "^2.4.8",
     "@nextui-org/slider": "^2.2.17",
     "@nextui-org/system": "2.2.6",
@@ -22,6 +23,8 @@
     "archiver": "^7.0.1",
     "deskthing-client": "^0.9.2",
     "deskthing-server": "latest",
+    "extract-file-icon": "^0.3.2",
+    "find-process": "^1.4.7",
     "framer-motion": "^11.11.11",
     "node-audio-volume-mixer": "^1.0.3",
     "react": "^18.3.1",

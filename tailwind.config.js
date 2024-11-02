@@ -8,7 +8,8 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
 
-    './node_modules/@nextui-org/theme/dist/components/slider.js'
+    './node_modules/@nextui-org/theme/dist/components/slider.js',
+    './node_modules/@nextui-org/theme/dist/components/image.js',
   ],
   theme: {
     extend: {},
