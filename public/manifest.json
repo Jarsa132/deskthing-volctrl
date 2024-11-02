@@ -6,8 +6,8 @@
   "isLocalApp": false,
   "requires": [],
   "label": "Volume mixer",
-  "version": "0.9.0",
-  "version_code": "0.1.1",
+  "version": "1.0.0",
+  "version_code": "1.0.0",
   "compatible_server": [
     "v0.9.0"
   ],
@@ -19,6 +19,6 @@
   "platforms": [
     "windows"
   ],
-  "homepage": "",
-  "repository": ""
+  "homepage": "https://github.com/Jarsa132/deskthing-volctrl",
+  "repository": "https://github.com/Jarsa132/deskthing-volctrl"
 }
