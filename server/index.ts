@@ -17,6 +17,11 @@ let refreshInterval: NodeJS.Timeout | null = null;
 const start = async () => {
     audioProcess = fork(path.resolve(__dirname, 'audioProcessor.js'));
 
+    audioProcess.on('exit', (code) => {
+        DeskThing.sendLog(`Audio process exited with code ${code}`);
+        audioProcess = null;
+    });
+
     DeskThing.on('set', (request) => {
         if (request.request === 'volume') {
             if (!audioProcess) return;
@@ -36,7 +41,10 @@ const start = async () => {
     });
 
     refreshInterval = setInterval(() => {
-        if (!audioProcess) return;
+        if (!audioProcess) {
+            audioProcess = fork(path.resolve(__dirname, 'audioProcessor.js'));
+            return
+        }
         audioProcess.send({ type: 'getAudioData' });
     }, 1000);
 
