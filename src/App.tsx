@@ -3,9 +3,6 @@ import { DeskThing } from 'deskthing-client'
 import { SocketData } from 'deskthing-client/dist/types'
 import { SessionData } from '../shared/types'
 
-import {Slider} from "@nextui-org/slider";
-import { Image } from '@nextui-org/image';
-
 const App: React.FC = () => {
     const deskthing = DeskThing.getInstance()
 
@@ -95,27 +92,24 @@ const App: React.FC = () => {
                     <div key={process.pid} className="bg-white bg-opacity-10 w-full h-12 flex justify-items-center items-center shrink-0 m-auto gap-4 p-2 rounded-md">
                         <div className='w-[5%] h-full flex shrink-0 justify-items-center items-center'>
                             <div className='m-auto'>
-                                <Image src={`data:image/png;base64,${icons[process.pid]}`} />
+                                {
+                                 icons[process.pid] && <img src={`data:image/png;base64,${icons[process.pid]}`} />
+                                }
+                                
                             </div>
                         </div>
                         <h1 className="text-white w-1/3 shrink-0 text-center truncate">{process.name}</h1>
 
 
-                        <Slider   
-                            size="lg"
-                            step={0.01}
-                            maxValue={1}
-                            minValue={0}
-                            color='success'
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
                             value={process.volume}
-                            aria-label="Volume"
-                            defaultValue={process.volume}
-                            onChange={(value) => {
-                                setVolume(process.pid, Array.isArray(value) ? value[0] : value)
-                            }}
-                            onChangeEnd={(value) => {
-                                setVolume(process.pid, Array.isArray(value) ? value[0] : value)
-                            }}
+                            onChange={(e) => setVolume(process.pid, parseFloat(e.target.value))}
+                            className="w-[50%] shrink-0 slider"
+                            style={{backgroundSize: `${Math.floor(process.volume *100)}% 100%`}}
                         />
 
                         <h2 className="text-white shrink-0 w-[5%] text-center">{Math.floor(process.volume *100)}%</h2>
